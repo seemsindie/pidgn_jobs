@@ -79,6 +79,38 @@ pub const CronExpr = struct {
 
         return error.NoMatchFound;
     }
+
+    /// Match a timestamp against this cron expression using a fixed UTC offset.
+    /// The offset is in seconds (e.g. EST = -18000, JST = 32400).
+    /// Note: This uses a fixed offset and does not account for DST transitions.
+    pub fn matchesWithOffset(self: CronExpr, ts: i64, tz_offset: i32) bool {
+        const adjusted_ts = ts + @as(i64, tz_offset);
+        const dt = time_utils.fromTimestamp(adjusted_ts);
+
+        if ((self.minute & (@as(u64, 1) << @intCast(dt.minute))) == 0) return false;
+        if ((self.hour & (@as(u32, 1) << @intCast(dt.hour))) == 0) return false;
+        if ((self.dom & (@as(u32, 1) << @intCast(dt.day))) == 0) return false;
+        if ((self.month & (@as(u16, 1) << @intCast(dt.month))) == 0) return false;
+        if ((self.dow & (@as(u8, 1) << dt.dow)) == 0) return false;
+
+        return true;
+    }
+
+    /// Find the next UTC timestamp after `after` that matches this cron expression
+    /// when interpreted in the timezone specified by `tz_offset` (seconds from UTC).
+    /// Note: This uses a fixed offset and does not account for DST transitions.
+    pub fn nextAfterWithOffset(self: CronExpr, after: i64, tz_offset: i32) !i64 {
+        var ts = after - @mod(after, 60) + 60;
+
+        const max_ts = after + 366 * 24 * 60 * 60;
+
+        while (ts <= max_ts) {
+            if (self.matchesWithOffset(ts, tz_offset)) return ts;
+            ts += 60;
+        }
+
+        return error.NoMatchFound;
+    }
 };
 
 fn parseField(field: []const u8, min: u6, max: u6) !u64 {
@@ -205,4 +237,31 @@ test "invalid expression returns error" {
 
     const result3 = CronExpr.parse("99 * * * *");
     try std.testing.expectError(error.InvalidCronExpression, result3);
+}
+
+test "matchesWithOffset EST timezone" {
+    // "0 9 * * *" = 09:00 local time
+    const expr = try CronExpr.parse("0 9 * * *");
+    const est_offset: i32 = -5 * 3600; // EST = UTC-5
+
+    // 2023-11-14 14:00:00 UTC = 09:00 EST → should match
+    const ts_14utc: i64 = 1699970400;
+    try std.testing.expect(expr.matchesWithOffset(ts_14utc, est_offset));
+
+    // 2023-11-14 09:00:00 UTC = 04:00 EST → should NOT match
+    const ts_09utc: i64 = 1699952400;
+    try std.testing.expect(!expr.matchesWithOffset(ts_09utc, est_offset));
+}
+
+test "nextAfterWithOffset returns correct UTC timestamp" {
+    // "0 9 * * *" = 09:00 local time in EST
+    const expr = try CronExpr.parse("0 9 * * *");
+    const est_offset: i32 = -5 * 3600;
+
+    // Start from 2023-11-14 13:00:00 UTC (= 08:00 EST)
+    const after: i64 = 1699966800;
+    const next = try expr.nextAfterWithOffset(after, est_offset);
+
+    // Next 09:00 EST = 14:00 UTC on same day = 1699970400
+    try std.testing.expectEqual(@as(i64, 1699970400), next);
 }

@@ -22,6 +22,7 @@ pub const DateTime = struct {
     day: u5, // 1-31
     hour: u5, // 0-23
     minute: u6, // 0-59
+    second: u6 = 0, // 0-59
     dow: u3, // 0=Sun, 1=Mon, ..., 6=Sat (cron convention)
 };
 
@@ -44,6 +45,7 @@ pub fn fromTimestamp(ts: i64) DateTime {
         .day = month_day.day_index + 1,
         .hour = day_secs.getHoursIntoDay(),
         .minute = day_secs.getMinutesIntoHour(),
+        .second = @intCast(@mod(ts, 60)),
         .dow = cron_dow,
     };
 }

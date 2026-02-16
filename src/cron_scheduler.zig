@@ -30,11 +30,23 @@ pub fn CronScheduler(comptime Store: type) type {
         store: *Store,
         running: *std.atomic.Value(bool),
         thread: ?std.Thread = null,
+        tz_offset: i32 = 0,
 
         pub fn init(store: *Store, running: *std.atomic.Value(bool)) Self {
             return .{
                 .store = store,
                 .running = running,
+            };
+        }
+
+        /// Initialize with a fixed timezone offset (seconds from UTC).
+        /// Example: EST = -18000, JST = 32400.
+        /// Note: Uses a fixed offset; does not account for DST transitions.
+        pub fn initWithTimezone(store: *Store, running: *std.atomic.Value(bool), tz_offset: i32) Self {
+            return .{
+                .store = store,
+                .running = running,
+                .tz_offset = tz_offset,
             };
         }
 
@@ -84,7 +96,7 @@ pub fn CronScheduler(comptime Store: type) type {
 
                 for (0..self.entry_count) |i| {
                     var entry = &self.entries[i];
-                    if (entry.cron_expr.matches(current_minute) and entry.last_run != current_minute) {
+                    if (entry.cron_expr.matchesWithOffset(current_minute, self.tz_offset) and entry.last_run != current_minute) {
                         entry.last_run = current_minute;
                         _ = self.store.enqueue(
                             entry.worker[0..entry.worker_len],
@@ -133,4 +145,17 @@ test "cron scheduler enqueues on match" {
 
     const count = try store.countByState("default", .available);
     try std.testing.expectEqual(@as(i64, 1), count);
+}
+
+test "cron scheduler initWithTimezone stores offset" {
+    var store = try MemoryStore.init(.{});
+    defer store.deinit();
+    var running = std.atomic.Value(bool).init(true);
+
+    const est_offset: i32 = -5 * 3600;
+    var scheduler = CronScheduler(MemoryStore).initWithTimezone(&store, &running, est_offset);
+    try std.testing.expectEqual(@as(i32, -18000), scheduler.tz_offset);
+
+    try scheduler.register("every_minute", "* * * * *", "tz_worker", "{}", .{});
+    try std.testing.expectEqual(@as(usize, 1), scheduler.entry_count);
 }
