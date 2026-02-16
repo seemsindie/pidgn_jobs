@@ -5,7 +5,8 @@
     .minimum_zig_version = "0.16.0-dev.2535+b5bd49460",
     .dependencies = .{
         .zzz_db = .{
-            .path = "../zzz_db",
+            .url = "https://github.com/seemsindie/zzz_db/archive/refs/tags/v0.1.0.tar.gz",
+            .hash = "zzz_db-0.1.0-Nj5NlrGpAgCsyO0x7_vkXLPd06jyfp7LIWtYLJvC0sbx",
         },
     },
     .paths = .{

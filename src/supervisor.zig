@@ -193,7 +193,12 @@ pub fn Supervisor(comptime Store: type) type {
         fn rescueLoop(self: *Self) void {
             while (self.running.load(.acquire)) {
                 _ = self.store.rescueStuck(300) catch {};
-                time_utils.sleepMs(self.config.rescue_interval_ms);
+                // Sleep in small increments so stop() isn't blocked
+                var slept: u32 = 0;
+                while (slept < self.config.rescue_interval_ms and self.running.load(.acquire)) {
+                    time_utils.sleepMs(500);
+                    slept += 500;
+                }
             }
         }
 
