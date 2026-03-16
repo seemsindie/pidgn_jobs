@@ -1,6 +1,11 @@
 # zzz_jobs
 
-A background job processing library for the zzz ecosystem. Provides job queues with flexible storage backends, retry strategies, cron scheduling, and telemetry.
+Background job processing for the zzz web framework.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Zig](https://img.shields.io/badge/Zig-0.16.0-orange.svg)](https://ziglang.org/)
+
+A background job processing library providing job queues with flexible storage backends, retry strategies, cron scheduling, and telemetry.
 
 ## Features
 
@@ -154,13 +159,26 @@ zig build -Dsqlite=true
 zig build -Dpostgres=true
 ```
 
+## Documentation
+
+Full documentation available at [docs.zzz.seemsindie.com](https://docs.zzz.seemsindie.com) under the Jobs section.
+
+## Ecosystem
+
+| Package | Description |
+|---------|-------------|
+| [zzz.zig](https://github.com/seemsindie/zzz.zig) | Core web framework |
+| [zzz_db](https://github.com/seemsindie/zzz_db) | Database ORM (SQLite + PostgreSQL) |
+| [zzz_jobs](https://github.com/seemsindie/zzz_jobs) | Background job processing |
+| [zzz_mailer](https://github.com/seemsindie/zzz_mailer) | Email sending |
+| [zzz_template](https://github.com/seemsindie/zzz_template) | Template engine |
+| [zzz_cli](https://github.com/seemsindie/zzz_cli) | CLI tooling |
+
 ## Requirements
 
 - Zig 0.16.0-dev.2535+b5bd49460 or later
 - zzz_db (for database-backed stores)
-- SQLite3 (optional, for SqliteDbStore)
-- PostgreSQL (optional, for PgDbStore)
 
 ## License
 
-MIT License - Copyright (c) 2026 Ivan Stamenkovic
+MIT License -- Copyright (c) 2026 Ivan Stamenkovic

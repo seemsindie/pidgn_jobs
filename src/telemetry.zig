@@ -25,7 +25,7 @@ pub const Telemetry = struct {
 
     handlers: [max_handlers]HandlerFn = undefined,
     handler_count: usize = 0,
-    mutex: std.Thread.Mutex = .{},
+    mutex: std.atomic.Mutex = .unlocked,
 
     pub fn attach(self: *Telemetry, handler: HandlerFn) void {
         while (!self.mutex.tryLock()) {}
