@@ -25,7 +25,7 @@ pub fn DbStore(comptime Backend: type) type {
         pool: *zzz_db.Pool(Backend),
         paused_queues: [max_paused]PausedQueue = [_]PausedQueue{.{}} ** max_paused,
         paused_count: usize = 0,
-        mutex: std.atomic.Mutex = .unlocked,
+        mutex: std.Thread.Mutex = .{},
 
         retry_strategies: [64]WorkerRetry = [_]WorkerRetry{.{}} ** 64,
         retry_count: usize = 0,
