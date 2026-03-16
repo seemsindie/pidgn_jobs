@@ -2,7 +2,7 @@
     .name = .zzz_jobs,
     .version = "0.1.0",
     .fingerprint = 0x898719309da00602,
-    .minimum_zig_version = "0.16.0-dev.2535+b5bd49460",
+    .minimum_zig_version = "0.16.0-dev.2905+5d71e3051",
     .dependencies = .{
         .zzz_db = .{
             .path = "../zzz_db",
