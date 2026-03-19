@@ -161,7 +161,7 @@ zig build -Dpostgres=true
 
 ## Documentation
 
-Full documentation available at [docs.zzz.seemsindie.com](https://docs.zzz.seemsindie.com) under the Jobs section.
+Full documentation available at [docs.zzz.indielab.link](https://docs.zzz.indielab.link) under the Jobs section.
 
 ## Ecosystem
 
