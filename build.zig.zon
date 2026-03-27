@@ -1,12 +1,12 @@
 .{
-    .name = .zzz_jobs,
-    .version = "0.2.0-beta.1",
-    .fingerprint = 0x898719309da00602,
+    .name = .pidgn_jobs,
+    .version = "0.3.0-beta.1",
+    .fingerprint = 0xfed982d2f458c66e,
     .minimum_zig_version = "0.16.0-dev.2905+5d71e3051",
     .dependencies = .{
-        .zzz_db = .{
-            .url = "git+https://github.com/seemsindie/zzz_db#60dcab1e3a80001516a585602ec922a4843d6f3b",
-            .hash = "zzz_db-0.2.0-beta.1-Nj5Nlr-smQB56DSuwxSCUbqoTvb0BwLeiFntldlByRoc",
+        .pidgn_db = .{
+            .url = "git+https://github.com/seemsindie/pidgn_db#268bddcb69a90d07bee90af55811e6fcac596502",
+            .hash = "pidgn_db-0.3.0-beta.1-0vqMpvG2mQCLPvTuqg6DSDV48yCUeRSvu6yr8iqD5T-s",
         },
     },
     .paths = .{

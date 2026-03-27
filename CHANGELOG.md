@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Background job processing with generic store pattern
 - MemoryStore for in-process job queues
-- DbStore for persistent storage (SQLite and PostgreSQL via zzz_db)
+- DbStore for persistent storage (SQLite and PostgreSQL via pidgn_db)
 - Supervisor with configurable worker threads and graceful shutdown
 - Priority-based job selection
 - Retry strategies: exponential, linear, constant backoff, and custom functions

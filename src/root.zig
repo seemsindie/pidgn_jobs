@@ -1,11 +1,11 @@
-//! zzz_jobs - Background Job Processing for the Zzz Web Framework
+//! pidgn_jobs - Background Job Processing for the Pidgn Web Framework
 //!
 //! Provides background job processing with in-memory and database-backed stores,
 //! configurable retry strategies, cron scheduling, unique jobs, and telemetry hooks.
 //! All core types are generic over a store type (MemoryStore or DbStore).
 
 const std = @import("std");
-const zzz_db = @import("zzz_db");
+const pidgn_db = @import("pidgn_db");
 const jobs_options = @import("jobs_options");
 
 // Core types
@@ -50,10 +50,10 @@ pub const JobResult = telemetry.JobResult;
 // Convenience aliases
 pub const MemorySupervisor = Supervisor(MemoryStore);
 
-pub const SqliteDbStore = if (jobs_options.sqlite_enabled) DbStore(zzz_db.sqlite) else struct {};
+pub const SqliteDbStore = if (jobs_options.sqlite_enabled) DbStore(pidgn_db.sqlite) else struct {};
 pub const SqliteSupervisor = if (jobs_options.sqlite_enabled) Supervisor(SqliteDbStore) else struct {};
 
-pub const PgDbStore = if (jobs_options.postgres_enabled) DbStore(zzz_db.postgres) else struct {};
+pub const PgDbStore = if (jobs_options.postgres_enabled) DbStore(pidgn_db.postgres) else struct {};
 pub const PgSupervisor = if (jobs_options.postgres_enabled) Supervisor(PgDbStore) else struct {};
 
 pub const version = "0.1.0";

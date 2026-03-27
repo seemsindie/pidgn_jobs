@@ -1,5 +1,5 @@
 const std = @import("std");
-const zzz_db = @import("zzz_db");
+const pidgn_db = @import("pidgn_db");
 const job_mod = @import("job.zig");
 const retry_mod = @import("retry.zig");
 const time_utils = @import("time_utils.zig");
@@ -16,13 +16,13 @@ fn copySlice(dest: []u8, pos: usize, src: []const u8) usize {
 }
 
 pub fn DbStore(comptime Backend: type) type {
-    zzz_db.backend.validate(Backend);
+    pidgn_db.backend.validate(Backend);
 
     return struct {
         const Self = @This();
         const max_paused = 16;
 
-        pool: *zzz_db.Pool(Backend),
+        pool: *pidgn_db.Pool(Backend),
         paused_queues: [max_paused]PausedQueue = [_]PausedQueue{.{}} ** max_paused,
         paused_count: usize = 0,
         mutex: std.atomic.Mutex = .unlocked,
@@ -57,7 +57,7 @@ pub fn DbStore(comptime Backend: type) type {
         };
 
         pub const Config = struct {
-            pool: *zzz_db.Pool(Backend),
+            pool: *pidgn_db.Pool(Backend),
         };
 
         pub fn init(config: Config) !Self {
@@ -101,7 +101,7 @@ pub fn DbStore(comptime Backend: type) type {
 
             if (Backend.dialect == .postgres) {
                 try pc.conn.exec(
-                    \\CREATE TABLE IF NOT EXISTS zzz_jobs (
+                    \\CREATE TABLE IF NOT EXISTS pidgn_jobs (
                     \\  id BIGSERIAL PRIMARY KEY,
                     \\  state INTEGER NOT NULL DEFAULT 0,
                     \\  queue TEXT NOT NULL DEFAULT 'default',
@@ -120,7 +120,7 @@ pub fn DbStore(comptime Backend: type) type {
                 );
             } else {
                 try pc.conn.exec(
-                    \\CREATE TABLE IF NOT EXISTS zzz_jobs (
+                    \\CREATE TABLE IF NOT EXISTS pidgn_jobs (
                     \\  id INTEGER PRIMARY KEY AUTOINCREMENT,
                     \\  state INTEGER NOT NULL DEFAULT 0,
                     \\  queue TEXT NOT NULL DEFAULT 'default',
@@ -140,7 +140,7 @@ pub fn DbStore(comptime Backend: type) type {
             }
 
             // Create index for efficient claiming
-            try pc.conn.exec("CREATE INDEX IF NOT EXISTS idx_zzz_jobs_claim ON zzz_jobs (queue, state, scheduled_at, priority)");
+            try pc.conn.exec("CREATE INDEX IF NOT EXISTS idx_pidgn_jobs_claim ON pidgn_jobs (queue, state, scheduled_at, priority)");
         }
 
         pub fn enqueue(self: *Self, worker: []const u8, args: []const u8, opts: JobOpts) !Job {
@@ -152,7 +152,7 @@ pub fn DbStore(comptime Backend: type) type {
                 defer pc.release();
 
                 var check_buf: [512]u8 = undefined;
-                const check_sql = std.fmt.bufPrint(&check_buf, "SELECT id FROM zzz_jobs WHERE unique_key = '{s}' AND state < 2 LIMIT 1", .{key}) catch return error.InternalError;
+                const check_sql = std.fmt.bufPrint(&check_buf, "SELECT id FROM pidgn_jobs WHERE unique_key = '{s}' AND state < 2 LIMIT 1", .{key}) catch return error.InternalError;
                 check_buf[check_sql.len] = 0;
                 const check_z: [:0]const u8 = check_buf[0..check_sql.len :0];
 
@@ -167,7 +167,7 @@ pub fn DbStore(comptime Backend: type) type {
                         },
                         .cancel_existing => {
                             var discard_buf: [256]u8 = undefined;
-                            const discard_sql = std.fmt.bufPrint(&discard_buf, "UPDATE zzz_jobs SET state = 4 WHERE id = {d}", .{existing_id}) catch return error.InternalError;
+                            const discard_sql = std.fmt.bufPrint(&discard_buf, "UPDATE pidgn_jobs SET state = 4 WHERE id = {d}", .{existing_id}) catch return error.InternalError;
                             discard_buf[discard_sql.len] = 0;
                             const discard_z: [:0]const u8 = discard_buf[0..discard_sql.len :0];
                             try pc.conn.exec(discard_z);
@@ -185,7 +185,7 @@ pub fn DbStore(comptime Backend: type) type {
             var buf: [2048]u8 = undefined;
             var pos: usize = 0;
 
-            pos += copySlice(&buf, pos, "INSERT INTO zzz_jobs (state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, inserted_at");
+            pos += copySlice(&buf, pos, "INSERT INTO pidgn_jobs (state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, inserted_at");
             if (opts.unique_key != null) {
                 pos += copySlice(&buf, pos, ", unique_key");
             }
@@ -259,7 +259,7 @@ pub fn DbStore(comptime Backend: type) type {
             // Promote scheduled jobs
             {
                 var promo_buf: [256]u8 = undefined;
-                const promo_sql = std.fmt.bufPrint(&promo_buf, "UPDATE zzz_jobs SET state = 0 WHERE state = 6 AND scheduled_at <= {d}", .{now}) catch return error.InternalError;
+                const promo_sql = std.fmt.bufPrint(&promo_buf, "UPDATE pidgn_jobs SET state = 0 WHERE state = 6 AND scheduled_at <= {d}", .{now}) catch return error.InternalError;
                 promo_buf[promo_sql.len] = 0;
                 const promo_z: [:0]const u8 = promo_buf[0..promo_sql.len :0];
                 try pc.conn.exec(promo_z);
@@ -268,7 +268,7 @@ pub fn DbStore(comptime Backend: type) type {
             // Find best candidate
             var find_buf: [512]u8 = undefined;
             var fpos: usize = 0;
-            fpos += copySlice(&find_buf, fpos, "SELECT id, state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, attempted_at, completed_at, inserted_at, errors, unique_key FROM zzz_jobs WHERE queue = '");
+            fpos += copySlice(&find_buf, fpos, "SELECT id, state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, attempted_at, completed_at, inserted_at, errors, unique_key FROM pidgn_jobs WHERE queue = '");
             fpos += copySlice(&find_buf, fpos, queue);
             fpos += copySlice(&find_buf, fpos, "' AND state = 0 AND scheduled_at <= ");
             const now_str = std.fmt.bufPrint(find_buf[fpos..], "{d}", .{now}) catch return error.InternalError;
@@ -285,7 +285,7 @@ pub fn DbStore(comptime Backend: type) type {
 
                 // Update to executing
                 var upd_buf: [256]u8 = undefined;
-                const upd_sql = std.fmt.bufPrint(&upd_buf, "UPDATE zzz_jobs SET state = 1, attempted_at = {d}, attempt = attempt + 1 WHERE id = {d}", .{ now, job_id }) catch return error.InternalError;
+                const upd_sql = std.fmt.bufPrint(&upd_buf, "UPDATE pidgn_jobs SET state = 1, attempted_at = {d}, attempt = attempt + 1 WHERE id = {d}", .{ now, job_id }) catch return error.InternalError;
                 upd_buf[upd_sql.len] = 0;
                 const upd_z: [:0]const u8 = upd_buf[0..upd_sql.len :0];
                 try pc.conn.exec(upd_z);
@@ -357,7 +357,7 @@ pub fn DbStore(comptime Backend: type) type {
 
             const now = time_utils.timestamp();
             var buf: [256]u8 = undefined;
-            const sql = std.fmt.bufPrint(&buf, "UPDATE zzz_jobs SET state = 2, completed_at = {d} WHERE id = {d}", .{ now, job_id }) catch return error.InternalError;
+            const sql = std.fmt.bufPrint(&buf, "UPDATE pidgn_jobs SET state = 2, completed_at = {d} WHERE id = {d}", .{ now, job_id }) catch return error.InternalError;
             buf[sql.len] = 0;
             const sql_z: [:0]const u8 = buf[0..sql.len :0];
             try pc.conn.exec(sql_z);
@@ -369,7 +369,7 @@ pub fn DbStore(comptime Backend: type) type {
 
             // Get current attempt and max_attempts
             var get_buf: [256]u8 = undefined;
-            const get_sql = std.fmt.bufPrint(&get_buf, "SELECT attempt, max_attempts, worker FROM zzz_jobs WHERE id = {d}", .{job_id}) catch return error.InternalError;
+            const get_sql = std.fmt.bufPrint(&get_buf, "SELECT attempt, max_attempts, worker FROM pidgn_jobs WHERE id = {d}", .{job_id}) catch return error.InternalError;
             get_buf[get_sql.len] = 0;
             const get_z: [:0]const u8 = get_buf[0..get_sql.len :0];
 
@@ -384,7 +384,7 @@ pub fn DbStore(comptime Backend: type) type {
                 if (attempt >= max_attempts) {
                     var buf: [512]u8 = undefined;
                     var pos: usize = 0;
-                    pos += copySlice(&buf, pos, "UPDATE zzz_jobs SET state = 4, errors = '");
+                    pos += copySlice(&buf, pos, "UPDATE pidgn_jobs SET state = 4, errors = '");
                     pos += copySlice(&buf, pos, error_msg);
                     pos += copySlice(&buf, pos, "' WHERE id = ");
                     const id_str = std.fmt.bufPrint(buf[pos..], "{d}", .{job_id}) catch return error.InternalError;
@@ -398,7 +398,7 @@ pub fn DbStore(comptime Backend: type) type {
                     const next_at = retry_mod.nextRetryAt(strategy, attempt, now);
 
                     var buf: [512]u8 = undefined;
-                    const sql = std.fmt.bufPrint(&buf, "UPDATE zzz_jobs SET state = 0, errors = '{s}', scheduled_at = {d} WHERE id = {d}", .{ error_msg, next_at, job_id }) catch return error.InternalError;
+                    const sql = std.fmt.bufPrint(&buf, "UPDATE pidgn_jobs SET state = 0, errors = '{s}', scheduled_at = {d} WHERE id = {d}", .{ error_msg, next_at, job_id }) catch return error.InternalError;
                     buf[sql.len] = 0;
                     const sql_z: [:0]const u8 = buf[0..sql.len :0];
                     try pc.conn.exec(sql_z);
@@ -412,7 +412,7 @@ pub fn DbStore(comptime Backend: type) type {
 
             var buf: [512]u8 = undefined;
             var pos: usize = 0;
-            pos += copySlice(&buf, pos, "UPDATE zzz_jobs SET state = 4, errors = '");
+            pos += copySlice(&buf, pos, "UPDATE pidgn_jobs SET state = 4, errors = '");
             pos += copySlice(&buf, pos, error_msg);
             pos += copySlice(&buf, pos, "' WHERE id = ");
             const id_str = std.fmt.bufPrint(buf[pos..], "{d}", .{job_id}) catch return error.InternalError;
@@ -430,7 +430,7 @@ pub fn DbStore(comptime Backend: type) type {
             const cutoff = now - timeout_seconds;
 
             var buf: [256]u8 = undefined;
-            const sql = std.fmt.bufPrint(&buf, "UPDATE zzz_jobs SET state = 0, errors = 'rescued: job timed out' WHERE state = 1 AND attempted_at < {d}", .{cutoff}) catch return error.InternalError;
+            const sql = std.fmt.bufPrint(&buf, "UPDATE pidgn_jobs SET state = 0, errors = 'rescued: job timed out' WHERE state = 1 AND attempted_at < {d}", .{cutoff}) catch return error.InternalError;
             buf[sql.len] = 0;
             const sql_z: [:0]const u8 = buf[0..sql.len :0];
 
@@ -444,7 +444,7 @@ pub fn DbStore(comptime Backend: type) type {
 
             var buf: [256]u8 = undefined;
             var pos: usize = 0;
-            pos += copySlice(&buf, pos, "SELECT COUNT(*) FROM zzz_jobs WHERE queue = '");
+            pos += copySlice(&buf, pos, "SELECT COUNT(*) FROM pidgn_jobs WHERE queue = '");
             pos += copySlice(&buf, pos, queue);
             pos += copySlice(&buf, pos, "' AND state = ");
             const state_str = std.fmt.bufPrint(buf[pos..], "{d}", .{@intFromEnum(state)}) catch return error.InternalError;
@@ -516,7 +516,7 @@ pub fn DbStore(comptime Backend: type) type {
             defer pc.release();
 
             var buf: [256]u8 = undefined;
-            const sql = std.fmt.bufPrint(&buf, "DELETE FROM zzz_jobs WHERE state = 2 AND completed_at < {d}", .{older_than}) catch return error.InternalError;
+            const sql = std.fmt.bufPrint(&buf, "DELETE FROM pidgn_jobs WHERE state = 2 AND completed_at < {d}", .{older_than}) catch return error.InternalError;
             buf[sql.len] = 0;
             const sql_z: [:0]const u8 = buf[0..sql.len :0];
 
@@ -529,7 +529,7 @@ pub fn DbStore(comptime Backend: type) type {
             defer pc.release();
 
             var buf: [512]u8 = undefined;
-            const sql = std.fmt.bufPrint(&buf, "SELECT id, state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, attempted_at, completed_at, inserted_at, errors, unique_key FROM zzz_jobs WHERE id = {d}", .{job_id}) catch return null;
+            const sql = std.fmt.bufPrint(&buf, "SELECT id, state, queue, worker, args, priority, attempt, max_attempts, scheduled_at, attempted_at, completed_at, inserted_at, errors, unique_key FROM pidgn_jobs WHERE id = {d}", .{job_id}) catch return null;
             buf[sql.len] = 0;
             const sql_z: [:0]const u8 = buf[0..sql.len :0];
 
@@ -563,15 +563,15 @@ pub fn DbStore(comptime Backend: type) type {
 // ── Tests ──────────────────────────────────────────────────────────────
 
 const jobs_options = @import("jobs_options");
-const sqlite = zzz_db.sqlite;
-const SqlitePool = zzz_db.Pool(sqlite);
+const sqlite = pidgn_db.sqlite;
+const SqlitePool = pidgn_db.Pool(sqlite);
 const SqliteDbStore = DbStore(sqlite);
 const supervisor_mod = @import("supervisor.zig");
 const Supervisor = supervisor_mod.Supervisor;
 
 // Use a temp file-based SQLite so all pool connections share the same database
 // (in-memory SQLite creates separate databases per connection without URI support)
-const test_db_path = "/tmp/zzz_jobs_test.db";
+const test_db_path = "/tmp/pidgn_jobs_test.db";
 const test_db_config = sqlite.Config{
     .database = test_db_path,
     .enable_wal = false,
@@ -599,7 +599,7 @@ test "table auto-creation on init" {
     // Verify table exists by inserting
     var pc = try pool.checkout();
     defer pc.release();
-    try pc.conn.exec("INSERT INTO zzz_jobs (worker) VALUES ('test')");
+    try pc.conn.exec("INSERT INTO pidgn_jobs (worker) VALUES ('test')");
 }
 
 test "enqueue and claim roundtrip" {
@@ -662,7 +662,7 @@ test "rescueStuck reclaims timed-out jobs via db" {
         defer pc.release();
         var buf: [256]u8 = undefined;
         const past = time_utils.timestamp() - 400;
-        const sql = std.fmt.bufPrint(&buf, "UPDATE zzz_jobs SET attempted_at = {d} WHERE state = 1", .{past}) catch unreachable;
+        const sql = std.fmt.bufPrint(&buf, "UPDATE pidgn_jobs SET attempted_at = {d} WHERE state = 1", .{past}) catch unreachable;
         buf[sql.len] = 0;
         const sql_z: [:0]const u8 = buf[0..sql.len :0];
         try pc.conn.exec(sql_z);

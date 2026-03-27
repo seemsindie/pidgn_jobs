@@ -13,8 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Clone zzz_db dependency
-        run: git clone https://github.com/seemsindie/zzz_db.git ../zzz_db
+      - name: Clone pidgn_db dependency
+        run: git clone https://github.com/seemsindie/pidgn_db.git ../pidgn_db
       - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0-dev.2905+5d71e3051

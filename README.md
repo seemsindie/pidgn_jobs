@@ -1,6 +1,6 @@
-# zzz_jobs
+# pidgn_jobs
 
-Background job processing for the zzz web framework.
+Background job processing for the pidgn web framework.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zig](https://img.shields.io/badge/Zig-0.16.0-orange.svg)](https://ziglang.org/)
@@ -11,7 +11,7 @@ A background job processing library providing job queues with flexible storage b
 
 - **Generic Store Pattern** -- same API for in-memory and database-backed queues
 - **MemoryStore** -- zero-dependency in-process queue (great for testing and simple deployments)
-- **DbStore** -- persistent job storage backed by SQLite or PostgreSQL via zzz_db
+- **DbStore** -- persistent job storage backed by SQLite or PostgreSQL via pidgn_db
 - **Supervisor** -- manages worker threads, polling, and graceful shutdown
 - **Priority Queues** -- jobs processed by priority then insertion order
 - **Retry Strategies** -- exponential, linear, constant backoff, or custom functions
@@ -26,15 +26,15 @@ A background job processing library providing job queues with flexible storage b
 ### In-Memory Jobs
 
 ```zig
-const zzz_jobs = @import("zzz_jobs");
+const pidgn_jobs = @import("pidgn_jobs");
 
-fn myWorker(args: []const u8, ctx: *zzz_jobs.JobContext) anyerror!void {
+fn myWorker(args: []const u8, ctx: *pidgn_jobs.JobContext) anyerror!void {
     // Process the job
     _ = args;
     _ = ctx;
 }
 
-var supervisor = try zzz_jobs.MemorySupervisor.init(.{}, .{
+var supervisor = try pidgn_jobs.MemorySupervisor.init(.{}, .{
     .queues = &.{.{ .name = "default", .concurrency = 10 }},
     .poll_interval_ms = 1000,
 });
@@ -63,7 +63,7 @@ supervisor.stop();
 
 ```zig
 // SQLite backend
-var supervisor = try zzz_jobs.SqliteSupervisor.init(
+var supervisor = try pidgn_jobs.SqliteSupervisor.init(
     .{ .connection = .{} },
     .{ .queues = &.{.{ .name = "default", .concurrency = 5 }} },
 );
@@ -121,8 +121,8 @@ _ = try supervisor.enqueue("email_worker", "{\"to\": \"user@example.com\"}", .{
 ### Telemetry
 
 ```zig
-var telemetry = zzz_jobs.Telemetry{};
-telemetry.attach(&fn(event: zzz_jobs.Event) void {
+var telemetry = pidgn_jobs.Telemetry{};
+telemetry.attach(&fn(event: pidgn_jobs.Event) void {
     switch (event) {
         .job_completed => |result| {
             log.info("Job completed in {}ms", .{result.duration_ms});
@@ -161,23 +161,23 @@ zig build -Dpostgres=true
 
 ## Documentation
 
-Full documentation available at [docs.zzz.indielab.link](https://docs.zzz.indielab.link) under the Jobs section.
+Full documentation available at [docs.pidgn.indielab.link](https://docs.pidgn.indielab.link) under the Jobs section.
 
 ## Ecosystem
 
 | Package | Description |
 |---------|-------------|
-| [zzz.zig](https://github.com/seemsindie/zzz.zig) | Core web framework |
-| [zzz_db](https://github.com/seemsindie/zzz_db) | Database ORM (SQLite + PostgreSQL) |
-| [zzz_jobs](https://github.com/seemsindie/zzz_jobs) | Background job processing |
-| [zzz_mailer](https://github.com/seemsindie/zzz_mailer) | Email sending |
-| [zzz_template](https://github.com/seemsindie/zzz_template) | Template engine |
-| [zzz_cli](https://github.com/seemsindie/zzz_cli) | CLI tooling |
+| [pidgn.zig](https://github.com/seemsindie/pidgn) | Core web framework |
+| [pidgn_db](https://github.com/seemsindie/pidgn_db) | Database ORM (SQLite + PostgreSQL) |
+| [pidgn_jobs](https://github.com/seemsindie/pidgn_jobs) | Background job processing |
+| [pidgn_mailer](https://github.com/seemsindie/pidgn_mailer) | Email sending |
+| [pidgn_template](https://github.com/seemsindie/pidgn_template) | Template engine |
+| [pidgn_cli](https://github.com/seemsindie/pidgn_cli) | CLI tooling |
 
 ## Requirements
 
 - Zig 0.16.0-dev.2535+b5bd49460 or later
-- zzz_db (for database-backed stores)
+- pidgn_db (for database-backed stores)
 
 ## License
 
