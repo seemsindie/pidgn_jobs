@@ -1,6 +1,6 @@
 .{
     .name = .pidgn_jobs,
-    .version = "0.3.1-beta.1",
+    .version = "0.3.0-beta.1",
     .fingerprint = 0xfed982d2f458c66e,
     .minimum_zig_version = "0.16.0-dev.2905+5d71e3051",
     .dependencies = .{
