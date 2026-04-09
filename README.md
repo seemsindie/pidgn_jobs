@@ -161,7 +161,7 @@ zig build -Dpostgres=true
 
 ## Documentation
 
-Full documentation available at [docs.pidgn.indielab.link](https://docs.pidgn.indielab.link) under the Jobs section.
+Full documentation available at [docs.pidgn.seemsindie.com](https://docs.pidgn.seemsindie.com) under the Jobs section.
 
 ## Ecosystem
 
