@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.16.0-dev.2905+5d71e3051",
     .dependencies = .{
         .pidgn_db = .{
-            .url = "git+https://github.com/seemsindie/pidgn_db#268bddcb69a90d07bee90af55811e6fcac596502",
-            .hash = "pidgn_db-0.3.0-beta.1-0vqMpvG2mQCLPvTuqg6DSDV48yCUeRSvu6yr8iqD5T-s",
+            .url = "git+https://github.com/seemsindie/pidgn_db#964b707fbfdea26f75f5fee500317c2cf22c61ac",
+            .hash = "pidgn_db-0.3.1-beta.1-0vqMpvi2mQBpxrPOrjYILyrNFRXRFHMHuEdoC0SvQ6rK",
         },
     },
     .paths = .{
